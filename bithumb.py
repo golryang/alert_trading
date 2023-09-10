@@ -1,3 +1,4 @@
+import queue
 import re
 import requests
 import datetime
@@ -32,11 +33,9 @@ def get_suspended_coins():
             coin_name, coin_symbol = coin_data.split("(") if "(" in coin_data else (coin_data, coin_data)
             coin_symbol = coin_symbol.rstrip(")")
             date = date_elem.text.strip() if date_elem else "Unknown Date"
-
             if date == today and event_number:
                 detail_url = f"https://cafe.bithumb.com/view/board-contents/{event_number}"
                 detail_response = requests.get(detail_url, headers=headers)
-
                 if detail_response.status_code == 200:
                     detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
                     writer_date_elem = detail_soup.select_one(".writer-name.date.col-12.col-md-4")
@@ -50,12 +49,7 @@ def get_suspended_coins():
                         if writer_date.split()[-1] == current_minute:
                             suspended_coins[coin_symbol] = {"date": date, "event_number": event_number,
                                                             "writer_date": writer_date}
-                    else:
-                        suspended_coins[coin_symbol] = {"date": date, "event_number": event_number}
-                else:
-                    suspended_coins[coin_symbol] = {"date": date, "event_number": event_number}
-            else:
-                suspended_coins[coin_symbol] = {"date": date}
+
 
     return suspended_coins
 
@@ -66,6 +60,8 @@ class BithumbTrader:
     def __init__(self, api):
         self.api = api
         self.owned_coins = {}  # 현재 보유하고 있는 코인 및 그 코인의 구매 가격을 저장하는 딕셔너리
+        self.new_coins = queue.Queue()
+        self.traded_flags = {}  # 각 코인에 대해 구매 및 판매가 이루어졌는지 추적하는 딕셔너리
 
     def buy_coin(self, coin_symbol, units):
         # 코인을 시장가로 구매하는 코드
@@ -89,41 +85,61 @@ class BithumbTrader:
 
     def check_price(self, coin_symbol):
         # 코인의 현재 가격을 조회하는 코드
+        payment_currency = "KRW"
         params = {
             "order_currency": coin_symbol,
-            "payment_currency": "KRW"
+            "payment_currency": payment_currency
         }
-        response = self.api.xcoinApiCall("/public/ticker", params)
+        response = self.api.xcoinApiCall(f"/public/ticker/{coin_symbol}_{payment_currency}", params)
         current_price = float(response['data']['closing_price'])
         return current_price
 
 
 def check_suspended_coins(trader):
+    test_cash = 2000
     while True:
         suspended_coins = get_suspended_coins()
-
         for coin_symbol, coin_info in suspended_coins.items():
-            if coin_symbol not in trader.owned_coins:
+            if coin_symbol not in trader.owned_coins and not trader.traded_flags.get(coin_symbol, False):
+                price = trader.check_price(coin_symbol)
+                units_to_buy = test_cash / price
+                formatted_units = "{:.4f}".format(units_to_buy)
                 # 코인을 구매
-                response = trader.buy_coin(coin_symbol, "구매할 수량")
-                # 구매 후 구매 가격을 owned_coins 딕셔너리에 저장
-                trader.owned_coins[coin_symbol] = trader.check_price(coin_symbol)
+                print(f"buying {coin_symbol} {formatted_units}")
+                response = trader.buy_coin(coin_symbol, formatted_units)
+                # 구매한 코인의 수량과 가격을 큐에 저장
+                trader.new_coins.put({coin_symbol: {"price": price, "units": formatted_units}})
+                # 플래그 설정
+                trader.traded_flags[coin_symbol] = True
 
         time.sleep(1)  # 1초마다 조건 확인
 
+
+
 def trade_logic(trader):
+    test_cash = 2000
     while True:
+        # 새로운 코인 정보가 큐에 있으면 가져와서 owned_coins에 추가
+        while not trader.new_coins.empty():
+            new_coin_data = trader.new_coins.get()
+            for coin_symbol, coin_info in new_coin_data.items():
+                trader.owned_coins[coin_symbol] = coin_info["price"]
+
         for coin_symbol in list(trader.owned_coins.keys()):
             current_price = trader.check_price(coin_symbol)
             buy_price = trader.owned_coins[coin_symbol]
 
-            if current_price >= buy_price * 1.05 or current_price <= buy_price * 0.99:
-                # 코인을 판매
-                response = trader.sell_coin(coin_symbol, "판매할 수량")
-                # 판매 후 owned_coins 딕셔너리에서 해당 코인 정보 제거
-                del trader.owned_coins[coin_symbol]
+            if current_price >= buy_price * 1.04 or current_price <= buy_price * 0.99:
+                # 보유한 코인의 수량으로 판매
+                units_to_sell = new_coin_data[coin_symbol]["units"]
+                print(f"selling {buy_price} to {coin_symbol} {units_to_sell}")
+                response = trader.sell_coin(coin_symbol, units_to_sell)
 
-        time.sleep(0.5)  # 0.5초마다 조건 확인
+                # 판매 후 owned_coins 딕셔너리에서 해당 코인 정보 제거 및 플래그 초기화
+                del trader.owned_coins[coin_symbol]
+                trader.traded_flags[coin_symbol] = False
+
+        time.sleep(1)  # 0.5초마다 조건 확인
 
 def main():
     api = bithumb_api.XCoinAPI("8beb19f57de6f9cdea23d7f53b6677c7", "35b6253e51a45957037cb566cab944bb")
@@ -140,4 +156,5 @@ def main():
 
 if __name__ == "__main__":
     # main()
+    print("started")
     main()
