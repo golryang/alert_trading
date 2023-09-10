@@ -1,0 +1,3 @@
+API_URL = "https://api.bithumb.com"
+PUBLIC_KEY = "YOUR_PUBLIC_KEY"
+SECRET_KEY = "YOUR_SECRET_KEY"
