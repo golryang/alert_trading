@@ -88,11 +88,12 @@ class BithumbTrader:
         payment_currency = "KRW"
         params = {
             "order_currency": coin_symbol,
-            "payment_currency": payment_currency
+            "payment_currency": payment_currency,
+            "count": 1
         }
-        response = self.api.xcoinApiCall(f"/public/ticker/{coin_symbol}_{payment_currency}", params)
-        current_price = float(response['data']['closing_price'])
-        return current_price
+        response = self.api.xcoinApiCall(f"/public/transaction_history/{coin_symbol}_{payment_currency}?count=1", params)
+        current_price = float(response['data'][0]['price'])
+        print(current_price)
 
 
 def check_suspended_coins(trader):
@@ -144,6 +145,8 @@ def trade_logic(trader):
 def main():
     api = bithumb_api.XCoinAPI("8beb19f57de6f9cdea23d7f53b6677c7", "35b6253e51a45957037cb566cab944bb")
     trader = BithumbTrader(api)
+
+    trader.check_price('BTC')
 
     t1 = threading.Thread(target=check_suspended_coins, args=(trader,))
     t2 = threading.Thread(target=trade_logic, args=(trader,))
