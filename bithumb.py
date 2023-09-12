@@ -93,8 +93,7 @@ class BithumbTrader:
         }
         response = self.api.xcoinApiCall(f"/public/transaction_history/{coin_symbol}_{payment_currency}?count=1", params)
         current_price = float(response['data'][0]['price'])
-        print(current_price)
-
+        return current_price
 
 def check_suspended_coins(trader):
     test_cash = 2000
@@ -113,7 +112,7 @@ def check_suspended_coins(trader):
                 # 플래그 설정
                 trader.traded_flags[coin_symbol] = True
 
-        time.sleep(1)  # 1초마다 조건 확인
+        time.sleep(1.5)  # 1초마다 조건 확인
 
 
 
@@ -140,7 +139,7 @@ def trade_logic(trader):
                 del trader.owned_coins[coin_symbol]
                 trader.traded_flags[coin_symbol] = False
 
-        time.sleep(1)  # 0.5초마다 조건 확인
+        time.sleep(1.5)  # 0.5초마다 조건 확인
 
 def main():
     api = bithumb_api.XCoinAPI("8beb19f57de6f9cdea23d7f53b6677c7", "35b6253e51a45957037cb566cab944bb")
