@@ -130,7 +130,7 @@ def trade_logic(trader):
             current_price = trader.check_price(coin_symbol)
             buy_price = trader.owned_coins[coin_symbol]
 
-            if current_price >= buy_price * 1.04 or current_price <= buy_price * 0.99:
+            if current_price >= buy_price * 1.025 or current_price <= buy_price * 0.99:
                 # 보유한 코인의 수량으로 판매
                 units_to_sell = new_coin_data[coin_symbol]["units"]
                 print(f"selling {buy_price} to {coin_symbol} {units_to_sell}")
