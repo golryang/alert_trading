@@ -19,10 +19,10 @@ def get_suspended_coins():
     soup = BeautifulSoup(response.text, 'html.parser')
     rows = soup.select("tr[style='cursor:pointer;border-top:1px solid #dee2e6;background-color: white']")
 
-    suspended_coins = {}
-    today = datetime.datetime.now().strftime("%Y.%m.%d")
-    current_minute = datetime.datetime.now().strftime("%H:%M")  # 현재 시간의 분 단위
 
+    suspended_coins = {}
+    today = datetime.datetime.now().strftime("%H:%M")
+    current_minute = datetime.datetime.now().strftime("%H:%M")  # 현재 시간의 분 단위
     for row in rows:
         title_elem = row.select_one(".one-line a")
         date_elem = row.select_one("td.small-size[style='vertical-align: middle']:not(.invisible-mobile)")
@@ -33,6 +33,7 @@ def get_suspended_coins():
             coin_name, coin_symbol = coin_data.split("(") if "(" in coin_data else (coin_data, coin_data)
             coin_symbol = coin_symbol.rstrip(")")
             date = date_elem.text.strip() if date_elem else "Unknown Date"
+
             if date == today and event_number:
                 detail_url = f"https://cafe.bithumb.com/view/board-contents/{event_number}"
                 detail_response = requests.get(detail_url, headers=headers)
@@ -96,7 +97,7 @@ class BithumbTrader:
         return current_price
 
 def check_suspended_coins(trader):
-    test_cash = 2000
+    test_cash = 3000
     while True:
         suspended_coins = get_suspended_coins()
         for coin_symbol, coin_info in suspended_coins.items():
@@ -117,7 +118,7 @@ def check_suspended_coins(trader):
 
 
 def trade_logic(trader):
-    test_cash = 2000
+    test_cash = 3000
     while True:
         # 새로운 코인 정보가 큐에 있으면 가져와서 owned_coins에 추가
         while not trader.new_coins.empty():
