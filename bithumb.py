@@ -7,6 +7,13 @@ import bithumb_api
 import threading
 from bs4 import BeautifulSoup
 
+def is_english(text):
+    # 텍스트에 영어 알파벳 문자가 포함되어 있는지 확인
+    for char in text:
+        if 'a' <= char <= 'z' or 'A' <= char <= 'Z':
+            return True
+    return False
+
 def get_suspended_coins():
     url = "https://cafe.bithumb.com/view/boards/43?keyword=&noticeCategory=7"
     headers = {
@@ -34,6 +41,7 @@ def get_suspended_coins():
             coin_symbol = coin_symbol.rstrip(")")
             date = date_elem.text.strip() if date_elem else "Unknown Date"
 
+            date = today
             if date == today and event_number:
                 detail_url = f"https://cafe.bithumb.com/view/board-contents/{event_number}"
                 detail_response = requests.get(detail_url, headers=headers)
@@ -47,11 +55,10 @@ def get_suspended_coins():
                         writer_date = match.group(1) if match else "Unknown Writer Date"
 
                         # 현재 시간의 분 단위와 writer_date의 분 단위가 일치하는 경우만 추가
-                        if writer_date.split()[-1] == current_minute:
-                            suspended_coins[coin_symbol] = {"date": date, "event_number": event_number,
-                                                            "writer_date": writer_date}
-
-
+                        if writer_date.split()[-1] == "10:30":
+                            if is_english(coin_symbol):
+                                suspended_coins[coin_symbol] = {"date": date, "event_number": event_number,
+                                                                "writer_date": writer_date}
     return suspended_coins
 
 
@@ -102,6 +109,7 @@ def check_suspended_coins(trader):
         suspended_coins = get_suspended_coins()
         for coin_symbol, coin_info in suspended_coins.items():
             if coin_symbol not in trader.owned_coins and not trader.traded_flags.get(coin_symbol, False):
+
                 price = trader.check_price(coin_symbol)
                 units_to_buy = test_cash / price
                 formatted_units = "{:.4f}".format(units_to_buy)
