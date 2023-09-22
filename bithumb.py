@@ -58,7 +58,9 @@ def get_suspended_coins():
                         if writer_date.split()[-1] == "10:30":
                             if is_english(coin_symbol):
                                 suspended_coins[coin_symbol] = {"date": date, "event_number": event_number,
-                                                                "writer_date": writer_date}
+                                                                "writer_date": writer_date,
+                                                                "coin_symbol": coin_symbol}  # coin_symbol 추가
+
     return suspended_coins
 
 
@@ -153,8 +155,6 @@ def trade_logic(trader):
 def main():
     api = bithumb_api.XCoinAPI("8beb19f57de6f9cdea23d7f53b6677c7", "35b6253e51a45957037cb566cab944bb")
     trader = BithumbTrader(api)
-
-    trader.check_price('BTC')
 
     t1 = threading.Thread(target=check_suspended_coins, args=(trader,))
     t2 = threading.Thread(target=trade_logic, args=(trader,))
