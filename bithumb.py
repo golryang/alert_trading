@@ -55,7 +55,7 @@ def get_suspended_coins():
                         writer_date = match.group(1) if match else "Unknown Writer Date"
 
                         # 현재 시간의 분 단위와 writer_date의 분 단위가 일치하는 경우만 추가
-                        if writer_date.split()[-1] == "10:30":
+                        if writer_date.split()[-1] == current_minute:
                             if is_english(coin_symbol):
                                 suspended_coins[coin_symbol] = {"date": date, "event_number": event_number,
                                                                 "writer_date": writer_date,
