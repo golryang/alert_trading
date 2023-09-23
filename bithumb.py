@@ -123,7 +123,7 @@ def check_suspended_coins(trader):
                 # 플래그 설정
                 trader.traded_flags[coin_symbol] = True
 
-        time.sleep(1.5)  # 1초마다 조건 확인
+        time.sleep(2)  # 1초마다 조건 확인
 
 
 
@@ -131,10 +131,16 @@ def trade_logic(trader):
     test_cash = 3000
     while True:
         # 새로운 코인 정보가 큐에 있으면 가져와서 owned_coins에 추가
+        new_coin_data = {}
         while not trader.new_coins.empty():
-            new_coin_data = trader.new_coins.get()
-            for coin_symbol, coin_info in new_coin_data.items():
-                trader.owned_coins[coin_symbol] = coin_info["price"]
+            coin_data = trader.new_coins.get()
+            new_coin_data.update(coin_data)
+            print('update',coin_data)
+
+
+        print('data', new_coin_data)
+        for coin_symbol, coin_info in new_coin_data.items():
+            trader.owned_coins[coin_symbol] = coin_info["price"]
 
         for coin_symbol in list(trader.owned_coins.keys()):
             current_price = trader.check_price(coin_symbol)
@@ -142,6 +148,7 @@ def trade_logic(trader):
 
             if current_price >= buy_price * 1.025 or current_price <= buy_price * 0.99:
                 # 보유한 코인의 수량으로 판매
+                print(coin_symbol)
                 units_to_sell = new_coin_data[coin_symbol]["units"]
                 print(f"selling {buy_price} to {coin_symbol} {units_to_sell}")
                 response = trader.sell_coin(coin_symbol, units_to_sell)
@@ -150,7 +157,7 @@ def trade_logic(trader):
                 del trader.owned_coins[coin_symbol]
                 trader.traded_flags[coin_symbol] = False
 
-        time.sleep(1.5)  # 0.5초마다 조건 확인
+        time.sleep(2)  # 0.5초마다 조건 확인
 
 def main():
     api = bithumb_api.XCoinAPI("8beb19f57de6f9cdea23d7f53b6677c7", "35b6253e51a45957037cb566cab944bb")
