@@ -138,7 +138,6 @@ def trade_logic(trader):
             print('update',coin_data)
 
 
-        print('data', new_coin_data)
         for coin_symbol, coin_info in new_coin_data.items():
             trader.owned_coins[coin_symbol] = coin_info["price"]
 
